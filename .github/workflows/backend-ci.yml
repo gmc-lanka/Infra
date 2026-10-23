@@ -241,6 +241,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Normalize image name for GHCR
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "name=ghcr.io/$(printf '%s' "$REPOSITORY" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
       - name: Build and push image
         uses: docker/build-push-action@v7
         with:
@@ -248,14 +253,14 @@ jobs:
           file: .infra/docker/backend/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:staging
-            ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+            ${{ steps.image.outputs.name }}:staging
+            ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Trigger staging deploy
         env:
           DEPLOY_HOOK: ${{ secrets.STAGING_DEPLOY_HOOK }}
-          IMAGE: ${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
+          IMAGE: ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
         run: |
           if [ -z "$DEPLOY_HOOK" ]; then
             echo "::warning::STAGING_DEPLOY_HOOK secret is not set; image pushed but not deployed."
@@ -319,6 +324,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Normalize image name for GHCR
+        id: image
+        env:
+          REPOSITORY: ${{ github.repository }}
+        run: echo "name=ghcr.io/$(printf '%s' "$REPOSITORY" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
       - name: Build and push image
         uses: docker/build-push-action@v7
         with:
@@ -326,14 +336,14 @@ jobs:
           file: .infra/docker/backend/Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}
+            ${{ steps.image.outputs.name }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Trigger production deploy
         env:
           DEPLOY_HOOK: ${{ secrets.PRODUCTION_DEPLOY_HOOK }}
-          IMAGE: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+          IMAGE: ${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}
         run: |
           if [ -z "$DEPLOY_HOOK" ]; then
             echo "::warning::PRODUCTION_DEPLOY_HOOK secret is not set; image pushed but not deployed."
