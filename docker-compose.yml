@@ -3,12 +3,13 @@
 #
 #   <workspace>/backend    test-gmc-lanka/backend
 #   <workspace>/frontend   test-gmc-lanka/frontend
-#   <workspace>/infra      this repository (run the commands from here)
+#   <workspace>/Infra      this repository (run the commands from here)
 #
 #   docker compose up --build      then open http://localhost:3000
 #   docker compose down            stop (add -v to also delete the database and uploads)
 #
-# Optional settings go in infra/.env (gitignored): MYSQL_ROOT_PASSWORD, FRONTEND_PORT, BACKEND_PORT.
+# Optional settings go in Infra/.env (gitignored): MYSQL_ROOT_PASSWORD, FRONTEND_PORT, BACKEND_PORT,
+# APP_PUBLIC_URL.
 # Further backend settings (JWT_SECRET, mail, Stripe, ...) are read from backend/.env when it exists.
 name: gmc-lanka
 
@@ -29,7 +30,7 @@ services:
   backend:
     build:
       context: ../backend
-      dockerfile: ../infra/docker/backend/Dockerfile
+      dockerfile: ../Infra/docker/backend/Dockerfile
     env_file:
       - path: ../backend/.env
         required: false
@@ -40,8 +41,8 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-gmc-local}
       APP_UPLOAD_DIR: /app/uploads/
-      APP_CORS_ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
-      APP_FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
+      APP_CORS_ALLOWED_ORIGINS: ${APP_PUBLIC_URL:-http://localhost:${FRONTEND_PORT:-3000}}
+      APP_FRONTEND_URL: ${APP_PUBLIC_URL:-http://localhost:${FRONTEND_PORT:-3000}}
     volumes:
       - uploads:/app/uploads
     ports:
@@ -53,7 +54,7 @@ services:
   frontend:
     build:
       context: ../frontend
-      dockerfile: ../infra/docker/frontend/Dockerfile
+      dockerfile: ../Infra/docker/frontend/Dockerfile
       additional_contexts:
         nginx: ./docker/frontend/nginx
     environment:
