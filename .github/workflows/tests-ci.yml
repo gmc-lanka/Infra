@@ -1,0 +1,158 @@
+# CI pipeline for the GMC Lanka integration test suites (test-gmc-lanka/tests)
+#
+#   Stage                         Runs on
+#   Lint & Format                 every push, every PR   Checkstyle + Spotless / ESLint + Prettier,
+#                                                        using the rules of the service each suite tests
+#   Backend Integration Tests     every push, every PR   *IT.java against MySQL 8, merged
+#                                                        unit + integration coverage gate (80% lines)
+#   Frontend Integration Tests    every push, every PR   *.int.test.js with Vitest
+#
+# Reusable workflow: test-gmc-lanka/tests calls it from its own .github/workflows/ci.yml. The tests
+# repository is checked out into tests/ next to backend/ and frontend/, the same layout as a local
+# clone, so pom.xml and vite.config.js find the suites without extra settings. backend and frontend
+# are taken from the branch with the same name when it exists, otherwise develop.
+name: Tests CI
+
+on:
+  workflow_call:
+    inputs:
+      infra-ref:
+        description: Branch or tag of test-gmc-lanka/infra to take the CI scripts from
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+env:
+  MAVEN_ARGS: -B --no-transfer-progress
+
+jobs:
+  lint:
+    name: Lint & Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: tests
+      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+        with:
+          repository: backend
+          path: backend
+      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+        with:
+          repository: frontend
+          path: frontend
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # Checkstyle and Spotless only look inside the project, so the suites are copied in for the check
+      - name: Checkstyle + formatting check of backend suites (fix with ./mvnw spotless:apply)
+        working-directory: backend
+        run: |
+          cp -r ../tests/backend/src/. src/
+          ./mvnw checkstyle:check spotless:check \
+            -Dcheckstyle.includes='com/gmc/backend/it/**/*.java' -DspotlessFiles='.*[\\/]it[\\/].*\.java'
+      - name: ESLint + Prettier check of frontend suites
+        working-directory: frontend
+        run: |
+          npm ci
+          cp -r ../tests/frontend/src/. src/
+          FILES=$(cd ../tests/frontend && find src -type f \( -name '*.js' -o -name '*.jsx' \))
+          npx eslint $FILES
+          npx prettier --check $FILES
+
+  backend-integration-tests:
+    name: Backend Integration Tests & Coverage Gate
+    runs-on: ubuntu-latest
+    needs: lint
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          # Throwaway database that only exists for this job
+          MYSQL_DATABASE: gmc_test_db
+          MYSQL_ROOT_PASSWORD: testroot
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: tests
+      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+        with:
+          repository: backend
+          path: backend
+      - uses: actions/checkout@v7
+        with:
+          repository: test-gmc-lanka/infra
+          ref: ${{ inputs.infra-ref }}
+          path: .infra
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      # Runs unit tests and *IT.java, merges both coverage files and enforces the 80% gate
+      - name: Run unit + integration tests against MySQL
+        working-directory: backend
+        run: ./mvnw verify -Dcheckstyle.skip
+        env:
+          DB_URL: jdbc:mysql://localhost:3306/gmc_test_db
+          DB_USERNAME: root
+          DB_PASSWORD: testroot
+      - name: Merged coverage summary
+        if: always()
+        run: bash .infra/scripts/coverage-summary.sh backend/target/site/jacoco-merged/jacoco.csv "Unit + integration coverage" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload merged coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: backend/target/site/jacoco-merged/
+          retention-days: 14
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-test-results
+          path: |
+            backend/target/surefire-reports/
+            backend/target/failsafe-reports/
+
+  frontend-integration-tests:
+    name: Frontend Integration Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: tests
+      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+        with:
+          repository: frontend
+          path: frontend
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Run integration tests
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run test:integration

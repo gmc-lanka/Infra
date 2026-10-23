@@ -1,0 +1,68 @@
+# Runs the whole GMC Lanka stack (MySQL, backend, frontend) on one machine, built from the source of
+# the sibling clones:
+#
+#   <workspace>/backend    test-gmc-lanka/backend
+#   <workspace>/frontend   test-gmc-lanka/frontend
+#   <workspace>/infra      this repository (run the commands from here)
+#
+#   docker compose up --build      then open http://localhost:3000
+#   docker compose down            stop (add -v to also delete the database and uploads)
+#
+# Optional settings go in infra/.env (gitignored): MYSQL_ROOT_PASSWORD, FRONTEND_PORT, BACKEND_PORT.
+# Further backend settings (JWT_SECRET, mail, Stripe, ...) are read from backend/.env when it exists.
+name: gmc-lanka
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: gmc_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-gmc-local}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '--silent']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../infra/docker/backend/Dockerfile
+    env_file:
+      - path: ../backend/.env
+        required: false
+    # Spring's own variable names, so they win over anything in application.properties or backend/.env
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/gmc_db?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-gmc-local}
+      APP_UPLOAD_DIR: /app/uploads/
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
+      APP_FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
+    volumes:
+      - uploads:/app/uploads
+    ports:
+      - ${BACKEND_PORT:-8080}:8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../infra/docker/frontend/Dockerfile
+      additional_contexts:
+        nginx: ./docker/frontend/nginx
+    environment:
+      BACKEND_URL: http://backend:8080
+    ports:
+      - ${FRONTEND_PORT:-3000}:80
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:
+  uploads:

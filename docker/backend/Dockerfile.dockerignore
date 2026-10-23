@@ -1,0 +1,13 @@
+target
+uploads
+.git
+.github
+.idea
+.vscode
+*.iml
+.env
+.env.*
+application-local.properties
+*.local-backup
+.infra
+.tests

@@ -1,0 +1,16 @@
+# Accepted findings for the CI security scan (trivy fs). Each entry needs a reason and an expiry
+# date; after it expires the scan fails again so the decision is reviewed. Evidence for OWASP A06.
+vulnerabilities:
+  # Spring Framework 6.2.x: fixed only in 7.0.9 (Spring Boot 4). Not exploitable here: the
+  # vulnerable code paths are XsltView rendering and SSE view fragments, and this backend is a
+  # JSON-only REST API with no view rendering (no XsltView, no SseEmitter, no template engine).
+  - id: CVE-2026-47884
+    paths:
+      - pom.xml
+    statement: "Not affected: XsltView is not used (JSON REST API only). Fix requires Spring Boot 4."
+    expired_at: 2027-01-31
+  - id: CVE-2026-47890
+    paths:
+      - pom.xml
+    statement: "Not affected: no Server-Sent Events or view fragments. Fix requires Spring Boot 4."
+    expired_at: 2027-01-31

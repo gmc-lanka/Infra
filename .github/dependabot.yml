@@ -1,0 +1,31 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: github-actions
+    directory: /.github/actions/checkout-sibling
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci
+
+  - package-ecosystem: docker
+    directories:
+      - /docker/frontend
+      - /docker/backend
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: build
+
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: build
