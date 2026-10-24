@@ -1,8 +1,8 @@
 # Runs the whole GMC Lanka stack (MySQL, backend, frontend) on one machine, built from the source of
 # the sibling clones:
 #
-#   <workspace>/backend    test-gmc-lanka/backend
-#   <workspace>/frontend   test-gmc-lanka/frontend
+#   <workspace>/backend    gmc-lanka/backend
+#   <workspace>/frontend   gmc-lanka/frontend
 #   <workspace>/Infra      this repository (run the commands from here)
 #
 #   docker compose up --build      then open http://localhost:3000

@@ -9,7 +9,7 @@
 #   Deploy - Staging      push (merge) to develop, after all stages pass
 #   Deploy - Production   push (merge) to main, after all stages pass + manual approval
 #
-# Reusable workflow: test-gmc-lanka/frontend calls it from its own .github/workflows/ci.yml, which
+# Reusable workflow: gmc-lanka/frontend calls it from its own .github/workflows/ci.yml, which
 # owns the triggers, concurrency and permissions. Here `github.*`, `vars.*` and secrets all refer to
 # the calling repository. Integration tests come from the tests repository (checked out into .tests)
 # and the Dockerfile and nginx config from this repository (checked out into .infra).
@@ -19,7 +19,7 @@ on:
   workflow_call:
     inputs:
       infra-ref:
-        description: Branch or tag of test-gmc-lanka/infra to take the Dockerfile and nginx config from
+        description: Branch or tag of gmc-lanka/infra to take the Dockerfile and nginx config from
         type: string
         default: main
 
@@ -76,7 +76,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+      - uses: gmc-lanka/infra/.github/actions/checkout-sibling@main
         with:
           repository: tests
           path: .tests
@@ -123,7 +123,7 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+      - uses: gmc-lanka/infra/.github/actions/checkout-sibling@main
         with:
           repository: tests
           path: .tests
@@ -163,7 +163,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
         with:
-          repository: test-gmc-lanka/infra
+          repository: gmc-lanka/infra
           ref: ${{ inputs.infra-ref }}
           path: .infra
       - uses: docker/setup-buildx-action@v3
@@ -226,7 +226,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
         with:
-          repository: test-gmc-lanka/infra
+          repository: gmc-lanka/infra
           ref: ${{ inputs.infra-ref }}
           path: .infra
       - name: Read version from package.json

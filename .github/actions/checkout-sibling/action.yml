@@ -1,12 +1,12 @@
-# Checks out another test-gmc-lanka repository next to the one being built.
+# Checks out another gmc-lanka repository next to the one being built.
 # Uses the branch with the same name as the current one when it exists (so a feature branch in
 # backend picks up the matching feature branch in tests), otherwise develop, otherwise main.
 name: Checkout sibling repository
-description: Check out a test-gmc-lanka repository on the matching branch
+description: Check out a gmc-lanka repository on the matching branch
 
 inputs:
   repository:
-    description: Repository name inside the test-gmc-lanka organisation, e.g. tests
+    description: Repository name inside the gmc-lanka organisation, e.g. tests
     required: true
   path:
     description: Directory (relative to the workspace) to check it out into
@@ -24,7 +24,7 @@ runs:
       id: ref
       shell: bash
       env:
-        URL: https://github.com/test-gmc-lanka/${{ inputs.repository }}.git
+        URL: https://github.com/gmc-lanka/${{ inputs.repository }}.git
         BRANCH: ${{ github.head_ref || github.ref_name }}
       run: |
         for ref in "$BRANCH" develop main; do
@@ -38,6 +38,6 @@ runs:
         exit 1
     - uses: actions/checkout@v7
       with:
-        repository: test-gmc-lanka/${{ inputs.repository }}
+        repository: gmc-lanka/${{ inputs.repository }}
         ref: ${{ steps.ref.outputs.ref }}
         path: ${{ inputs.path }}

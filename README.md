@@ -1,10 +1,10 @@
 # GMC Lanka – Infrastructure
 
-Infrastructure as code for the [test-gmc-lanka](https://github.com/test-gmc-lanka) project: the CI/CD
+Infrastructure as code for the [gmc-lanka](https://github.com/gmc-lanka) project: the CI/CD
 pipelines, Dockerfiles, the local docker-compose stack and the scripts and settings they use.
-The application code lives in [frontend](https://github.com/test-gmc-lanka/frontend) and
-[backend](https://github.com/test-gmc-lanka/backend); the integration test suites in
-[tests](https://github.com/test-gmc-lanka/tests).
+The application code lives in [frontend](https://github.com/gmc-lanka/frontend) and
+[backend](https://github.com/gmc-lanka/backend); the integration test suites in
+[tests](https://github.com/gmc-lanka/tests).
 
 ## Layout
 
@@ -42,7 +42,7 @@ GitHub only starts workflows that are stored in the repository that was pushed t
 ```yaml
 jobs:
   pipeline:
-    uses: test-gmc-lanka/infra/.github/workflows/backend-ci.yml@main
+    uses: gmc-lanka/infra/.github/workflows/backend-ci.yml@main
     permissions:
       contents: write
       packages: write
@@ -50,13 +50,13 @@ jobs:
 ```
 
 Inside the reusable workflow, `github.*`, `vars.*` and secrets refer to the calling repository, so image
-names (`ghcr.io/test-gmc-lanka/<repo>`), environments (`staging`, `production`), deploy hooks and
+names (`ghcr.io/gmc-lanka/<repo>`), environments (`staging`, `production`), deploy hooks and
 release tags stay per repository. Jobs that need more than the service's own code check out:
 
-| Into     | Repository | Used for                                                                 |
-| -------- | ---------- | ------------------------------------------------------------------------ |
-| `.infra` | infra      | Dockerfiles, nginx template, coverage script, Trivy exceptions           |
-| `.tests` | tests      | `*IT.java` (backend) and `*.int.test.js` (frontend) integration suites   |
+| Into     | Repository | Used for                                                               |
+| -------- | ---------- | ---------------------------------------------------------------------- |
+| `.infra` | infra      | Dockerfiles, nginx template, coverage script, Trivy exceptions         |
+| `.tests` | tests      | `*IT.java` (backend) and `*.int.test.js` (frontend) integration suites |
 
 `tests` (and, in the tests pipeline, `backend` and `frontend`) are taken from the branch with the same
 name as the one being built when it exists, otherwise `develop`, otherwise `main`. So a change that
@@ -68,15 +68,15 @@ pass `with: { infra-ref: feature/x }`.
 
 ### Stages
 
-| Stage               | frontend / backend trigger                   | tests trigger    |
-| ------------------- | -------------------------------------------- | ---------------- |
+| Stage               | frontend / backend trigger                   | tests trigger     |
+| ------------------- | -------------------------------------------- | ----------------- |
 | Lint & Format       | Every push and PR                            | Every push and PR |
-| Build               | Every push and PR                            | –                |
-| Unit Tests          | Every push and PR (coverage report uploaded) | –                |
+| Build               | Every push and PR                            | –                 |
+| Unit Tests          | Every push and PR (coverage report uploaded) | –                 |
 | Integration Tests   | Push to `develop`, PR to `develop`           | Every push and PR |
-| Security Scan       | Push to `develop`/`main`, PRs                | –                |
-| Deploy – Staging    | Merge to `develop`                           | –                |
-| Deploy – Production | Merge to `main`, after manual approval       | –                |
+| Security Scan       | Push to `develop`/`main`, PRs                | –                 |
+| Deploy – Staging    | Merge to `develop`                           | –                 |
+| Deploy – Production | Merge to `main`, after manual approval       | –                 |
 
 Secrets and variables are still set in each service repository (Settings → Secrets and variables →
 Actions, and the `staging` / `production` environments): `CODECOV_TOKEN`, `STAGING_DEPLOY_HOOK`,

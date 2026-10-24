@@ -1,4 +1,4 @@
-# CI pipeline for the GMC Lanka integration test suites (test-gmc-lanka/tests)
+# CI pipeline for the GMC Lanka integration test suites (gmc-lanka/tests)
 #
 #   Stage                         Runs on
 #   Lint & Format                 every push, every PR   Checkstyle + Spotless / ESLint + Prettier,
@@ -7,7 +7,7 @@
 #                                                        unit + integration coverage gate (80% lines)
 #   Frontend Integration Tests    every push, every PR   *.int.test.js with Vitest
 #
-# Reusable workflow: test-gmc-lanka/tests calls it from its own .github/workflows/ci.yml. The tests
+# Reusable workflow: gmc-lanka/tests calls it from its own .github/workflows/ci.yml. The tests
 # repository is checked out into tests/ next to backend/ and frontend/, the same layout as a local
 # clone, so pom.xml and vite.config.js find the suites without extra settings. backend and frontend
 # are taken from the branch with the same name when it exists, otherwise develop.
@@ -17,7 +17,7 @@ on:
   workflow_call:
     inputs:
       infra-ref:
-        description: Branch or tag of test-gmc-lanka/infra to take the CI scripts from
+        description: Branch or tag of gmc-lanka/infra to take the CI scripts from
         type: string
         default: main
 
@@ -35,17 +35,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: tests
-      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+      - uses: gmc-lanka/infra/.github/actions/checkout-sibling@main
         with:
           repository: backend
           path: backend
-      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+      - uses: gmc-lanka/infra/.github/actions/checkout-sibling@main
         with:
           repository: frontend
           path: frontend
       - uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: "21"
           distribution: temurin
           cache: maven
           cache-dependency-path: backend/pom.xml
@@ -92,18 +92,18 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: tests
-      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+      - uses: gmc-lanka/infra/.github/actions/checkout-sibling@main
         with:
           repository: backend
           path: backend
       - uses: actions/checkout@v7
         with:
-          repository: test-gmc-lanka/infra
+          repository: gmc-lanka/infra
           ref: ${{ inputs.infra-ref }}
           path: .infra
       - uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: "21"
           distribution: temurin
           cache: maven
           cache-dependency-path: backend/pom.xml
@@ -142,7 +142,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           path: tests
-      - uses: test-gmc-lanka/infra/.github/actions/checkout-sibling@main
+      - uses: gmc-lanka/infra/.github/actions/checkout-sibling@main
         with:
           repository: frontend
           path: frontend
