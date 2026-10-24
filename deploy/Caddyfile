@@ -1,0 +1,6 @@
+# SITE_ADDRESS comes from .env: ":80" serves plain HTTP on the public IP; a domain list such as
+# "gmclanka.lk, www.gmclanka.lk" makes Caddy fetch Let's Encrypt certificates and redirect to HTTPS.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy frontend:80
+}
