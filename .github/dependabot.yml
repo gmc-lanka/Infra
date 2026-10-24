@@ -24,7 +24,9 @@ updates:
       prefix: build
 
   - package-ecosystem: docker-compose
-    directory: /
+    directories:
+      - /
+      - /deploy
     schedule:
       interval: monthly
     commit-message:

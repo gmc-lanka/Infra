@@ -12,9 +12,11 @@ RUN npm run build
 # --- Runtime stage: nginx serves the SPA and proxies /api and /uploads to the backend ---
 FROM nginx:1.27-alpine
 # The nginx image runs envsubst on /etc/nginx/templates/*.template at start-up, so
-# BACKEND_URL and PORT are read when the container starts (one image for staging and production).
+# BACKEND_URL, PORT and RESOLVER are read when the container starts (one image for staging and production).
+# RESOLVER is the DNS server nginx uses to find the backend; 127.0.0.11 is Docker's embedded DNS.
 ENV BACKEND_URL=http://backend:8080 \
-    PORT=80
+    PORT=80 \
+    RESOLVER=127.0.0.11
 # "nginx" is a named build context pointing at infra/docker/frontend/nginx
 # (docker build --build-context nginx=<path>, or additional_contexts in docker-compose.yml).
 COPY --from=nginx default.conf.template /etc/nginx/templates/default.conf.template
