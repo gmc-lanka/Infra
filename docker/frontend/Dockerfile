@@ -2,7 +2,7 @@
 #   docker build -f ../infra/docker/frontend/Dockerfile --build-context nginx=../infra/docker/frontend/nginx -t gmc-frontend .
 
 # --- Build stage: install exact locked deps and produce the static bundle ---
-FROM node:22-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund
