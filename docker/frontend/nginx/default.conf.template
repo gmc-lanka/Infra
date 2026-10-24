@@ -1,10 +1,15 @@
-# ${BACKEND_URL} and ${PORT} are filled in from the container environment at start-up.
+# ${BACKEND_URL}, ${PORT} and ${RESOLVER} are filled in from the container environment at start-up.
 server {
   listen ${PORT};
   root /usr/share/nginx/html;
   index index.html;
   server_tokens off;
   client_max_body_size 20m;
+
+  # proxy_pass through a variable makes nginx look the backend up again (every 10s) instead of once at
+  # start-up, so redeploying only the backend container does not leave this one pointing at its old IP
+  resolver ${RESOLVER} valid=10s ipv6=off;
+  set $backend "${BACKEND_URL}";
 
   add_header X-Content-Type-Options "nosniff" always;
   add_header X-Frame-Options "DENY" always;
@@ -18,14 +23,14 @@ server {
 
   # Same paths the Vite dev proxy forwards, so the app needs no build-time API URL
   location /api/ {
-    proxy_pass ${BACKEND_URL};
+    proxy_pass $backend;
     proxy_ssl_server_name on;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
   }
 
   location /uploads/ {
-    proxy_pass ${BACKEND_URL};
+    proxy_pass $backend;
     proxy_ssl_server_name on;
   }
 

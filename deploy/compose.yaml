@@ -1,0 +1,77 @@
+# Production stack for a single EC2 host: MySQL, backend and frontend images from GHCR, and Caddy in
+# front for HTTPS (certificates are issued and renewed automatically once DNS points here).
+#
+#   cp .env.example .env     then fill it in
+#   docker compose up -d
+#
+# CI redeploys the backend / frontend containers on every release (scripts/deploy-ec2.sh).
+# Only Caddy publishes ports; MySQL, backend and frontend are reachable inside the stack only.
+# The project and volume names match ../docker-compose.yml, so an existing database is reused.
+name: gmc-lanka
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    # Small footprint for a 1 GB instance
+    command: --performance-schema=OFF --innodb-buffer-pool-size=64M
+    environment:
+      MYSQL_DATABASE: gmc_db
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in .env}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '--silent']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: ghcr.io/gmc-lanka/backend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    # JWT_SECRET, mail and Stripe settings (see .env.example)
+    env_file: .env
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/gmc_db?allowPublicKeyRetrieval=true&useSSL=false
+      DB_USERNAME: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      UPLOAD_DIR: /app/uploads/
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:?set PUBLIC_URL in .env}
+      FRONTEND_URL: ${PUBLIC_URL}
+    # The heap is 75% of this (JAVA_TOOL_OPTIONS in the image)
+    mem_limit: 512m
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    image: ghcr.io/gmc-lanka/frontend:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: http://backend:8080
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+      - 443:443/udp
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  mysql-data:
+  uploads:
+  caddy-data:
+  caddy-config:

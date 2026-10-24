@@ -176,7 +176,7 @@ jobs:
             target/failsafe-reports/
       - name: Upload coverage to Codecov (for the README badge)
         if: ${{ !cancelled() && github.event_name == 'push' }}
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: target/site/jacoco-merged/jacoco.xml
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -229,7 +229,7 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/checkout@v7
         with:
           repository: gmc-lanka/infra
@@ -257,17 +257,15 @@ jobs:
             ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Trigger staging deploy
+      - name: Deploy to EC2
         env:
-          DEPLOY_HOOK: ${{ secrets.STAGING_DEPLOY_HOOK }}
-          IMAGE: ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
-        run: |
-          if [ -z "$DEPLOY_HOOK" ]; then
-            echo "::warning::STAGING_DEPLOY_HOOK secret is not set; image pushed but not deployed."
-            exit 0
-          fi
-          curl -fsS -X POST --get "$DEPLOY_HOOK" --data-urlencode "imgURL=$IMAGE" > /dev/null
-          echo "Deploy triggered for $IMAGE"
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || 'infra/deploy' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .infra/scripts/deploy-ec2.sh backend
       - name: Smoke test
         if: ${{ vars.STAGING_URL != '' }}
         env:
@@ -340,16 +338,25 @@ jobs:
             ${{ steps.image.outputs.name }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Trigger production deploy
+      - name: Deploy to EC2
         env:
-          DEPLOY_HOOK: ${{ secrets.PRODUCTION_DEPLOY_HOOK }}
-          IMAGE: ${{ steps.image.outputs.name }}:${{ steps.version.outputs.tag }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          DEPLOY_DIR: ${{ vars.DEPLOY_DIR || 'infra/deploy' }}
+          GHCR_USER: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .infra/scripts/deploy-ec2.sh backend
+      - name: Smoke test
+        if: ${{ vars.PRODUCTION_URL != '' }}
+        env:
+          URL: ${{ vars.PRODUCTION_URL }}
         run: |
-          if [ -z "$DEPLOY_HOOK" ]; then
-            echo "::warning::PRODUCTION_DEPLOY_HOOK secret is not set; image pushed but not deployed."
-            exit 0
-          fi
-          curl -fsS -X POST --get "$DEPLOY_HOOK" --data-urlencode "imgURL=$IMAGE" > /dev/null
+          for i in $(seq 1 40); do
+            if curl -fsS "$URL/api/products" > /dev/null; then echo "Production is up"; exit 0; fi
+            echo "Waiting for $URL ($i/40)..."; sleep 15
+          done
+          echo "::error::Production did not become healthy"; exit 1
       - name: Tag the release (SemVer)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

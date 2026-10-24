@@ -5,3 +5,4 @@
 # Checkouts made by CI
 .infra/
 .tests/
+!.env.example
