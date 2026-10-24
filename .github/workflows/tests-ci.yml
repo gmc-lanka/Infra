@@ -43,7 +43,7 @@ jobs:
         with:
           repository: frontend
           path: frontend
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           java-version: "21"
           distribution: temurin
@@ -101,7 +101,7 @@ jobs:
           repository: gmc-lanka/infra
           ref: ${{ inputs.infra-ref }}
           path: .infra
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           java-version: "21"
           distribution: temurin
