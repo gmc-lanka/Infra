@@ -1,0 +1,42 @@
+# ${BACKEND_URL} and ${PORT} are filled in from the container environment at start-up.
+server {
+  listen ${PORT};
+  root /usr/share/nginx/html;
+  index index.html;
+  server_tokens off;
+  client_max_body_size 20m;
+
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "DENY" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+  location = /healthz {
+    access_log off;
+    default_type text/plain;
+    return 200 "ok";
+  }
+
+  # Same paths the Vite dev proxy forwards, so the app needs no build-time API URL
+  location /api/ {
+    proxy_pass ${BACKEND_URL};
+    proxy_ssl_server_name on;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  location /uploads/ {
+    proxy_pass ${BACKEND_URL};
+    proxy_ssl_server_name on;
+  }
+
+  # Hashed build files never change, so cache them for a year
+  location /assets/ {
+    expires 1y;
+  }
+
+  # Client-side routes (/products, /admin/...) all load index.html
+  location / {
+    expires -1;
+    try_files $uri $uri/ /index.html;
+  }
+}

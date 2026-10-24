@@ -1,0 +1,7 @@
+# Local settings for docker compose (never commit)
+.env
+.env.*
+
+# Checkouts made by CI
+.infra/
+.tests/
