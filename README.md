@@ -6,6 +6,8 @@ The application code lives in [frontend](https://github.com/gmc-lanka/frontend) 
 [backend](https://github.com/gmc-lanka/backend); the integration test suites in
 [tests](https://github.com/gmc-lanka/tests).
 
+**Live site:** [gmc-lanka.lk](https://gmc-lanka.lk/)
+
 ## Layout
 
 ```
