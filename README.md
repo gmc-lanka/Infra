@@ -8,6 +8,22 @@ The application code lives in [frontend](https://github.com/gmc-lanka/frontend) 
 
 **Live site:** [gmc-lanka.lk](https://gmc-lanka.lk/)
 
+## Demo Credentials
+
+Use the following demo accounts to explore the GMC Lanka system.
+
+| Role | Email | Password |
+|---|---|---|
+| Customer | `tharsh.sarath@gmail.com` | `11092002` |
+| Admin | `tthushakaran19@gmail.com` | `Thusha@#19` |
+| Technician | `aswini2k20@gmail.com` | `Main@123` |
+
+### Role Access
+
+- **Customer:** Browse products, manage the shopping cart, place orders, book appointments, and submit feedback.
+- **Admin:** Manage products, categories, orders, appointments, users, and other administrative functions, subject to configured permissions.
+- **Technician:** View assigned maintenance tasks and update task statuses.
+
 ## Layout
 
 ```
